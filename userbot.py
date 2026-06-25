@@ -105,6 +105,16 @@ def save_proxies():
         json.dump({"proxies": proxies, "active": active_proxy}, f)
 
 
+def load_template():
+    global template
+    if os.path.exists(TEMPLATE_FILE):
+        try:
+            with open(TEMPLATE_FILE, "r", encoding="utf-8") as f:
+                template = [line.strip() for line in f if line.strip()]
+        except Exception:
+            template = []
+
+
 def get_uptime():
     if not start_time:
         return ""
@@ -647,6 +657,12 @@ def register_handlers(target_client, client_id=None):
         text = file.getvalue().decode("utf-8")
         template = [line.strip() for line in text.splitlines() if line.strip()]
 
+        try:
+            with open(TEMPLATE_FILE, "w", encoding="utf-8") as f:
+                f.write(text)
+        except Exception:
+            pass
+
         if template:
             await event.edit(f"Шаблон сохранён! ({len(template)} строк)")
         else:
@@ -666,6 +682,7 @@ def register_handlers(target_client, client_id=None):
         try:
             with open(TEMPLATE_FILE, "w", encoding="utf-8") as f:
                 f.write(text)
+            load_template()
             await event.edit(f"✅ Шаблон сохранён в {TEMPLATE_FILE}")
         except Exception as e:
             await event.edit(f"❌ Ошибка сохранения шаблона: {e}")
@@ -703,6 +720,7 @@ def register_handlers(target_client, client_id=None):
         events.NewMessage(pattern=r"^\.fuck($| .+)", outgoing=True))
     @safe_event
     async def fuck_handler(event):
+        load_template()
         if state["fuck_running"]:
             state["fuck_running"] = False
             if state["fuck_task"]:
@@ -735,14 +753,8 @@ def register_handlers(target_client, client_id=None):
                 await event.edit("Формат: .fuck \"юз человека\" <задержка> (например 1s, 1m, 1h)")
                 return
 
-        if not os.path.exists(TEMPLATE_FILE):
-            await event.edit(f"Файл шаблона не найден. Напиши .txt и сохрани шаблон.")
-            return
-
-        with open(TEMPLATE_FILE, "r", encoding="utf-8") as f:
-            lines = [line.strip() for line in f if line.strip()]
-        if not lines:
-            await event.edit("Файл шаблона пуст. Заполни его и попробуй снова.")
+        if not template:
+            await event.edit(f"Файл шаблона не найден или пуст. Напиши .txt и сохрани шаблон.")
             return
 
         state["fuck_running"] = True
@@ -754,6 +766,7 @@ def register_handlers(target_client, client_id=None):
         events.NewMessage(pattern=r"^\.trl($| .+)", outgoing=True))
     @safe_event
     async def trl_handler(event):
+        load_template()
         if state["trl_running"]:
             state["trl_running"] = False
             if state["trl_task"]:
@@ -776,7 +789,7 @@ def register_handlers(target_client, client_id=None):
         prefix = " ".join(args[1:]) if len(args) > 1 else ""
 
         if not template:
-            await event.edit("Сначала сохрани шаблон через .shablon")
+            await event.edit("Сначала сохрани шаблон через .shablon или .txt")
             return
 
         state["trl_running"] = True
